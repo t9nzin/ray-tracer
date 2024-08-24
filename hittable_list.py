@@ -2,6 +2,10 @@ from hittable import Hittable
 from hittable import HitRecord
 from interval import Interval
 
+"""
+A list of a bunch of hittable objects .
+Makes up the entire world for scene.
+"""
 class HittableList(Hittable):
     def __init__(self, object = None):
         self.objects = []

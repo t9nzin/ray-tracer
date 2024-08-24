@@ -11,54 +11,53 @@ from color import *
 from vector import *
 from material import *
 
+"""
+Display a progress bar in console
+"""
 def progress(completed, total):
     filled_length = int(round(20 * completed / float(total)))
     bar = '█' * filled_length + '.' * (20 - filled_length)
     sys.stdout.write(f'progress: \r[{bar}]')
     sys.stdout.flush()
 
+"""
+Constructs and dispatches rays into the world
+Uses results of rays to construct rendered img
+"""
 class Camera:
-    def __init__(self, aspect_ratio=1.0, image_width=100, samples_per_px=10, max_depth=50, vfov=20, look_from=Vector(-2,2,1), look_at=Vector(0, 0, -1), vup=Vector(0, 1, 0)):
-        self.aspect_ratio = aspect_ratio
-        self.image_width = image_width
-        self.samples_per_px = samples_per_px
-        self.max_depth = max_depth
+    def __init__(self, aspect_ratio=1.0, image_width=100, samples_per_px=100, max_depth=50):
+        self.aspect_ratio = aspect_ratio # width / height
+        self.image_width = image_width # rendered img width in px
+        self.samples_per_px = samples_per_px # count of random samples per px
+        # samples_per_px = number of rays shot per pixel -- higher == higher quality pic
+        self.max_depth = max_depth # max number of ray bounces into scene
+        # point in 3D space from which all scene rays will originate
         self.center = Vector(0, 0, 0)
-        self.vfov = vfov
-        self.look_from = look_from
-        self.look_at = look_at
-        self.vup = vup
 
     def initialize(self):
+        # calculate image height to keep aspect ratio
         self.image_height = int(self.image_width / self.aspect_ratio)
+        # ensure image height is at least 1
         self.image_height = 1 if self.image_height < 1 else self.image_height
         self.pixel_samples_scale = 1.0 / self.samples_per_px
 
-        self.center = self.look_from
+        self.center = Vector(0,0,0)
 
         # determine viewport dimensions
-        focal_length = (self.look_from - self.look_at).length()
-        theta = degrees_to_radians(self.vfov)
-        h = math.tan(theta/2)
-        viewport_height = 2 * h * focal_length
+        focal_length = 1.0
+        viewport_height = 2.0
         viewport_width = viewport_height * (self.image_width / self.image_height)
 
-        # calculate u, v, w unit basis vectors
-        w = Vector.unit_vector(self.look_from - self.look_at)
-        u = Vector.unit_vector(Vector.cross(self.vup, w))
-        v = Vector.cross(w,u)
-
         # calculate the vectors across the horizontal and down the vertical viewport edges
-        viewport_u = viewport_width * u #Vector(viewport_width, 0, 0)
-        viewport_v = viewport_height * -v #Vector(0, -viewport_height, 0)
+        viewport_u = Vector(viewport_width, 0, 0)
+        viewport_v = Vector(0, -viewport_height, 0)
 
         # calculate the horizontal and vertical delta vectors from pixel to pixel
         self.pixel_delta_u = viewport_u / self.image_width
         self.pixel_delta_v = viewport_v / self.image_height
 
         # calculate location of the upper left pixel
-        #viewport_upper_left = self.center - Vector(0, 0,focal_length) - viewport_u / 2 - viewport_v / 2
-        viewport_upper_left = self.center - (focal_length * w) - viewport_u / 2 - viewport_v / 2
+        viewport_upper_left = self.center - Vector(0, 0,focal_length) - viewport_u / 2 - viewport_v / 2
         self.pixel00_loc = viewport_upper_left + 0.5 * (
                     self.pixel_delta_u + self.pixel_delta_v)
 
@@ -78,6 +77,10 @@ class Camera:
 
                     write_color(f, self.pixel_samples_scale * pixel_color)
 
+    """
+    Construct a camera ray originating from the origin and directed at
+    randomly sampled point around the pixel location i, j
+    """
     def get_ray(self, i , j):
         offset = self.sample_square()
         pixel_sample = self.pixel00_loc + ((i + offset.x) * self.pixel_delta_u) + ((j + offset.y) * self.pixel_delta_v)
@@ -87,6 +90,9 @@ class Camera:
 
         return Ray(ray_origin, ray_direction)
 
+    """
+    Returns the vector to a random point in the [-.5, -.5]-[+.5, +.5] unit square
+    """
     def sample_square(self):
         return Vector(random_double() - 0.5, random_double() - 0.5, 0)
 
@@ -102,8 +108,6 @@ class Camera:
             attenuation = Vector(0,0,0)
             if rec.mat.scatter(r, rec, attenuation, scattered):
                 return attenuation * self.ray_color(scattered, depth - 1, world)
-            # direction = rec.normal + Vector.random_unit_vector()
-            # return 0.5 * self.ray_color(Ray(rec.p, direction), depth - 1, world)
             return Vector(0,0,0)
 
         unit_direction = Vector.unit_vector(r.direction)

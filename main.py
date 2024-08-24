@@ -26,19 +26,11 @@ def main():
     world.add(Sphere(Vector(-1.0, 0.0, -1.0), 0.4, material_bubble))
     world.add(Sphere(Vector(1.0, 0.0, -1.0), 0.5, material_right))
 
-    # world.add(Sphere(Vector(0, 0, -1), 0.5))
-    # world.add(Sphere(Vector(0, -100.5, -1), 100))
-
     cam = Camera()
     cam.aspect_ratio = 16.0 / 9.0
     cam.image_width = 400
     cam.samples_per_px = 100
     cam.max_depth = 50
-
-    cam.vfov = 20
-    cam.look_from = Vector(-2, 2, 1)
-    cam.look_at = Vector(0,0, -1)
-    cam.vup = Vector(0, 1, 0)
 
     cam.render(world, FILE)
 
